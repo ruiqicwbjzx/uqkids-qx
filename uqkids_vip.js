@@ -35,8 +35,24 @@ function patchVip(o) {
     });
 }
 
-patchVip(obj);
+// 记录 play 相关字段用于调试
+let debugInfo = "";
+function findPreviewFields(o, path) {
+    if (!o || typeof o !== "object") return;
+    ["previewDur","previewDuration","preview","paid","limitImmunit"].forEach(k => {
+        if (k in o) debugInfo += path + "." + k + "=" + o[k] + " ";
+    });
+    Object.keys(o).forEach(k => {
+        if (o[k] && typeof o[k] === "object") findPreviewFields(o[k], path + "." + k);
+    });
+}
 
-$notify("UQKids VIP", $request.url, "✅ 脚本已运行");
+const url = $request.url;
+if (url.indexOf("coreapp/play") !== -1 || url.indexOf("getUser") !== -1) {
+    findPreviewFields(obj, "");
+    $notify("UQKids", url.split("/").slice(-2).join("/"), debugInfo || "无预览字段");
+}
+
+patchVip(obj);
 
 $done({ body: JSON.stringify(obj) });
