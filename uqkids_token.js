@@ -4,10 +4,13 @@ const VIP_TOKEN = "NjZmNjcwMWM3ZjRhZWMxMDIwZjliZDliZTVjNzRjMzM0Nzg0MGU4MzBhNzlmZ
 
 let headers = $request.headers;
 const key = Object.keys(headers).find(k => k.toLowerCase() === "token");
+const old = key ? headers[key] : "(none)";
 if (key) {
     headers[key] = VIP_TOKEN;
 } else {
     headers["token"] = VIP_TOKEN;
 }
+
+$notify("UQKids Token", $request.url.split("?")[0].split("/").slice(-3).join("/"), "✅ token已替换 old=" + old.substring(0, 8) + "...");
 
 $done({ headers });
