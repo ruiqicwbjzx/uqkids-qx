@@ -17,12 +17,19 @@ try {
 
 function patchVip(o) {
     if (!o || typeof o !== "object") return;
-    if ("vip"        in o) o.vip        = VIP_LEVEL;
-    if ("svip"       in o) o.svip       = VIP_LEVEL;
-    if ("vipEnd"     in o) o.vipEnd     = VIP_EXPIRE;
-    if ("svipEnd"    in o) o.svipEnd    = VIP_EXPIRE;
-    if ("vipEndTime" in o) o.vipEndTime = VIP_EXPIRE;
-    if ("isVip"      in o) o.isVip      = 1;
+    // 用户信息字段
+    if ("vip"             in o) o.vip             = VIP_LEVEL;
+    if ("svip"            in o) o.svip            = VIP_LEVEL;
+    if ("vipEnd"          in o) o.vipEnd          = VIP_EXPIRE;
+    if ("svipEnd"         in o) o.svipEnd         = VIP_EXPIRE;
+    if ("vipEndTime"      in o) o.vipEndTime      = VIP_EXPIRE;
+    if ("isVip"           in o) o.isVip           = 1;
+    // 播放鉴权字段（previewDur=0 解除30s限制）
+    if ("previewDur"      in o) o.previewDur      = 0;
+    if ("previewDuration" in o) o.previewDuration = 0;
+    if ("preview"         in o) o.preview         = 0;
+    if ("paid"            in o) o.paid            = 1;
+    if ("limitImmunit"    in o) o.limitImmunit    = 1;
     Object.keys(o).forEach(k => {
         if (o[k] && typeof o[k] === "object") patchVip(o[k]);
     });
