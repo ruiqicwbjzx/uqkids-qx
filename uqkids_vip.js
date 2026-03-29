@@ -1,40 +1,18 @@
-// 小小优趣 (com.uyoung.uqkids) VIP 响应修改脚本
-// 原理：保持自己的 token 不变，拦截服务器响应并将 vip 字段改为 SVIP
-// 不影响登录状态
+// 小小优趣 (com.uyoung.uqkids) 精准 Token 替换脚本
+// 原理：仅在 getUser / getUserSVip / user/attr 请求中替换 token header
+// 服务器返回会员账号的真实 VIP 数据，不影响自己账号的登录状态
+//
+// ⚠️ VIP 账号 token（抓包获取）
+const VIP_TOKEN = "NjZmNjcwMWM3ZjRhZWMxMDIwZjliZDliZTVjNzRjMzM0Nzg0MGU4MzBhNzlmZGEwZjY5ZDI1ZWIzODczZTI5ZmJjYzNmMjI2NGZmNzQxNjdmZDg2YWFhYzdiNGNlMDNl";
 
-// checkProductDate: 内部会拼接 " 23:59:59"，所以这里只填日期
-const VIP_EXPIRE = "2099-12-31";
-// isVip 逻辑: user.vip.intValue == 1 才返回 true
-const VIP_LEVEL  = 1;
+let headers = $request.headers;
 
-let body = $response.body;
-let obj;
-
-try {
-    obj = JSON.parse(body);
-} catch (e) {
-    // 非 JSON 响应直接放行
-    $done({});
+// 兼容大小写：token / Token / TOKEN
+const key = Object.keys(headers).find(k => k.toLowerCase() === "token");
+if (key) {
+    headers[key] = VIP_TOKEN;
+} else {
+    headers["token"] = VIP_TOKEN;
 }
 
-let patched = false;
-
-function patchVip(o) {
-    if (!o || typeof o !== "object") return;
-    if ("vip"        in o) { o.vip        = VIP_LEVEL; patched = true; }
-    if ("svip"       in o) { o.svip       = VIP_LEVEL; patched = true; }
-    if ("vipEnd"     in o) { o.vipEnd     = VIP_EXPIRE; patched = true; }
-    if ("svipEnd"    in o) { o.svipEnd    = VIP_EXPIRE; patched = true; }
-    if ("vipEndTime" in o) { o.vipEndTime = VIP_EXPIRE; patched = true; }
-    if ("isVip"      in o) { o.isVip      = 1;          patched = true; }
-    Object.keys(o).forEach(k => {
-        if (o[k] && typeof o[k] === "object") patchVip(o[k]);
-    });
-}
-
-patchVip(obj);
-
-// 调试通知：显示命中的 URL 和是否有 vip 字段被修改
-$notify("UQKids VIP", $request.url, patched ? "✅ vip 字段已修改" : "⚠️ 未发现 vip 字段，原样放行");
-
-$done({ body: JSON.stringify(obj) });
+$done({ headers });
