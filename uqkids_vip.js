@@ -12,24 +12,28 @@ let obj;
 try {
     obj = JSON.parse(body);
 } catch (e) {
+    // 非 JSON 响应直接放行
     $done({});
 }
 
+let patched = false;
+
 function patchVip(o) {
     if (!o || typeof o !== "object") return;
-    // vip/svip 统一设 1，vipEnd 设未来时间
-    if ("vip"        in o) o.vip        = VIP_LEVEL;
-    if ("svip"       in o) o.svip       = VIP_LEVEL;
-    if ("vipEnd"     in o) o.vipEnd     = VIP_EXPIRE;
-    if ("svipEnd"    in o) o.svipEnd    = VIP_EXPIRE;
-    if ("vipEndTime" in o) o.vipEndTime = VIP_EXPIRE;
-    if ("isVip"      in o) o.isVip      = 1;
+    if ("vip"        in o) { o.vip        = VIP_LEVEL; patched = true; }
+    if ("svip"       in o) { o.svip       = VIP_LEVEL; patched = true; }
+    if ("vipEnd"     in o) { o.vipEnd     = VIP_EXPIRE; patched = true; }
+    if ("svipEnd"    in o) { o.svipEnd    = VIP_EXPIRE; patched = true; }
+    if ("vipEndTime" in o) { o.vipEndTime = VIP_EXPIRE; patched = true; }
+    if ("isVip"      in o) { o.isVip      = 1;          patched = true; }
     Object.keys(o).forEach(k => {
         if (o[k] && typeof o[k] === "object") patchVip(o[k]);
     });
 }
 
-// 对整个响应递归修补，兼容 data/data.user 等各种结构
 patchVip(obj);
+
+// 调试通知：显示命中的 URL 和是否有 vip 字段被修改
+$notify("UQKids VIP", $request.url, patched ? "✅ vip 字段已修改" : "⚠️ 未发现 vip 字段，原样放行");
 
 $done({ body: JSON.stringify(obj) });
