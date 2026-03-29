@@ -48,9 +48,18 @@ function findPreviewFields(o, path) {
 }
 
 const url = $request.url;
-if (url.indexOf("coreapp/play") !== -1 || url.indexOf("getUser") !== -1) {
+if (url.indexOf("coreapp/play") !== -1) {
     findPreviewFields(obj, "");
-    $notify("UQKids", url.split("/").slice(-2).join("/"), debugInfo || "无预览字段");
+    // 找 playUrl 字段
+    let playUrl = "";
+    function findPlayUrl(o) {
+        if (!o || typeof o !== "object") return;
+        if ("playUrl" in o) { playUrl = String(o.playUrl).substring(0, 80); return; }
+        Object.keys(o).forEach(k => findPlayUrl(o[k]));
+    }
+    findPlayUrl(obj);
+    const fields = debugInfo || "无previewDur";
+    $notify("UQKids Play", url.split("/").slice(-2).join("/"), fields + " | url=" + (playUrl || "无playUrl"));
 }
 
 patchVip(obj);
