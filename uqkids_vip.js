@@ -15,6 +15,24 @@ try {
     $done({});
 }
 
+// 移除 CDN URL 中的 end= 时间限制（playUrl 是 base64 编码的 CDN URL）
+function removeEndParam(b64) {
+    if (!b64 || typeof b64 !== "string") return b64;
+    try {
+        let decoded = atob(b64);
+        if (decoded.indexOf("end=") === -1) return b64;
+        const before = decoded;
+        // 移除 &end=xxx 或 ?end=xxx
+        decoded = decoded.replace(/&end=\d+/g, "").replace(/\?end=\d+&/g, "?").replace(/\?end=\d+$/g, "");
+        if (decoded === before) return b64;
+        const patched = btoa(decoded);
+        $notify("UQKids CDN", "end= 已移除", before.substring(before.indexOf("end="), before.indexOf("end=") + 12));
+        return patched;
+    } catch(e) {
+        return b64;
+    }
+}
+
 function patchVip(o) {
     if (!o || typeof o !== "object") return;
     // 用户信息字段
@@ -24,7 +42,9 @@ function patchVip(o) {
     if ("svipEnd"         in o) o.svipEnd         = VIP_EXPIRE;
     if ("vipEndTime"      in o) o.vipEndTime      = VIP_EXPIRE;
     if ("isVip"           in o) o.isVip           = 1;
-    // 播放鉴权字段（previewDur=0 解除30s限制）
+    // CDN playUrl 移除 end= 时间限制
+    if ("playUrl"         in o && o.playUrl) o.playUrl = removeEndParam(o.playUrl);
+    // 播放鉴权字段
     if ("previewDur"      in o) o.previewDur      = 999999;
     if ("previewDuration" in o) o.previewDuration = 999999;
     if ("preview"         in o) o.preview         = 0;
@@ -33,33 +53,6 @@ function patchVip(o) {
     Object.keys(o).forEach(k => {
         if (o[k] && typeof o[k] === "object") patchVip(o[k]);
     });
-}
-
-// 记录 play 相关字段用于调试
-let debugInfo = "";
-function findPreviewFields(o, path) {
-    if (!o || typeof o !== "object") return;
-    ["previewDur","previewDuration","preview","paid","limitImmunit"].forEach(k => {
-        if (k in o) debugInfo += path + "." + k + "=" + o[k] + " ";
-    });
-    Object.keys(o).forEach(k => {
-        if (o[k] && typeof o[k] === "object") findPreviewFields(o[k], path + "." + k);
-    });
-}
-
-const url = $request.url;
-if (url.indexOf("coreapp/play") !== -1) {
-    findPreviewFields(obj, "");
-    // 找 playUrl 字段
-    let playUrl = "";
-    function findPlayUrl(o) {
-        if (!o || typeof o !== "object") return;
-        if ("playUrl" in o) { playUrl = String(o.playUrl).substring(0, 80); return; }
-        Object.keys(o).forEach(k => findPlayUrl(o[k]));
-    }
-    findPlayUrl(obj);
-    const fields = debugInfo || "无previewDur";
-    $notify("UQKids Play", url.split("/").slice(-2).join("/"), fields + " | url=" + (playUrl || "无playUrl"));
 }
 
 patchVip(obj);
