@@ -1,21 +1,33 @@
-// 小小优趣 (com.uyoung.uqkids) 共享 Token 脚本
-// 原理：将所有发往 fastapi.ukids.cn 的请求中的 token 替换为 VIP 账号 token
-// 服务器将按 VIP 账号返回真实会员数据
-//
-// ⚠️ 填入有效的 VIP 账号 token（登录后抓包 ucapp/getUser 请求的 token header）
-const VIP_TOKEN = "NjZmNjcwMWM3ZjRhZWMxMDIwZjliZDliZTVjNzRjMzM0Nzg0MGU4MzBhNzlmZGEwZjY5ZDI1ZWIzODczZTI5ZmJjYzNmMjI2NGZmNzQxNjdmZDg2YWFhYzdiNGNlMDNl";
+// 小小优趣 (com.uyoung.uqkids) VIP 响应修改脚本
+// 原理：保持自己的 token 不变，拦截服务器响应并将 vip 字段改为 SVIP
+// 不影响登录状态
 
-// ── 修改请求 header ──────────────────────────────────────────────────────────
-let headers = $request.headers;
+const VIP_EXPIRE = "2099-12-31 23:59:59";
+const VIP_LEVEL  = 2; // 0=无 1=VIP 2=SVIP
 
-// 兼容大小写：token / Token / TOKEN
-const tokenKey = Object.keys(headers).find(k => k.toLowerCase() === "token");
+let body = $response.body;
+let obj;
 
-if (tokenKey) {
-    headers[tokenKey] = VIP_TOKEN;
-} else {
-    // 不存在时直接注入
-    headers["token"] = VIP_TOKEN;
+try {
+    obj = JSON.parse(body);
+} catch (e) {
+    $done({});
 }
 
-$done({ headers });
+function patchVip(o) {
+    if (!o || typeof o !== "object") return;
+    if ("vip"        in o) o.vip        = VIP_LEVEL;
+    if ("svip"       in o) o.svip       = VIP_LEVEL;
+    if ("vipEnd"     in o) o.vipEnd     = VIP_EXPIRE;
+    if ("svipEnd"    in o) o.svipEnd    = VIP_EXPIRE;
+    if ("vipEndTime" in o) o.vipEndTime = VIP_EXPIRE;
+    if ("isVip"      in o) o.isVip      = 1;
+    if ("paid"       in o) o.paid       = 0;
+    Object.keys(o).forEach(k => {
+        if (o[k] && typeof o[k] === "object") patchVip(o[k]);
+    });
+}
+
+if (obj && obj.data) patchVip(obj.data);
+
+$done({ body: JSON.stringify(obj) });
