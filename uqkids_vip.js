@@ -30,4 +30,6 @@ function patchVip(o) {
 
 patchVip(obj);
 
+$notify("UQKids VIP", $request.url, "✅ 脚本已运行");
+
 $done({ body: JSON.stringify(obj) });
