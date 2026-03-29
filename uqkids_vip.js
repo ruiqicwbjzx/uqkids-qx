@@ -3,7 +3,8 @@
 // 不影响登录状态
 
 const VIP_EXPIRE = "2099-12-31 23:59:59";
-const VIP_LEVEL  = 2; // 0=无 1=VIP 2=SVIP
+// isVip 逻辑: user.vip.intValue == 1 才返回 true，设 2 不生效
+const VIP_LEVEL  = 1;
 
 let body = $response.body;
 let obj;
@@ -16,18 +17,19 @@ try {
 
 function patchVip(o) {
     if (!o || typeof o !== "object") return;
+    // vip/svip 统一设 1，vipEnd 设未来时间
     if ("vip"        in o) o.vip        = VIP_LEVEL;
     if ("svip"       in o) o.svip       = VIP_LEVEL;
     if ("vipEnd"     in o) o.vipEnd     = VIP_EXPIRE;
     if ("svipEnd"    in o) o.svipEnd    = VIP_EXPIRE;
     if ("vipEndTime" in o) o.vipEndTime = VIP_EXPIRE;
     if ("isVip"      in o) o.isVip      = 1;
-    if ("paid"       in o) o.paid       = 0;
     Object.keys(o).forEach(k => {
         if (o[k] && typeof o[k] === "object") patchVip(o[k]);
     });
 }
 
-if (obj && obj.data) patchVip(obj.data);
+// 对整个响应递归修补，兼容 data/data.user 等各种结构
+patchVip(obj);
 
 $done({ body: JSON.stringify(obj) });
