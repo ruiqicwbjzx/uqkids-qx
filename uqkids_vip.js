@@ -1,28 +1,33 @@
-// 小小优趣 (com.uyoung.uqkids) 全局 Token 替换脚本
-// 原理：所有 *.ukids.cn 请求替换 token，登录/注册/短信等认证路径跳过
+// 小小优趣 (com.uyoung.uqkids) VIP 响应修改脚本
+// 原理：修改 getUser/getUserSVip 响应，伪造 VIP 状态
+// 不依赖外部 token，不影响自己账号登录
 //
-// ⚠️ VIP 账号 token（抓包获取）
-const VIP_TOKEN = "NjZmNjcwMWM3ZjRhZWMxMDIwZjliZDliZTVjNzRjMzM0Nzg0MGU4MzBhNzlmZGEwZjY5ZDI1ZWIzODczZTI5ZmJjYzNmMjI2NGZmNzQxNjdmZDg2YWFhYzdiNGNlMDNl";
+// checkProductDate: 内部会拼接 " 23:59:59"，所以这里只填日期
+const VIP_EXPIRE = "2099-12-31";
+const VIP_LEVEL  = 1;  // isVip 只判断 == 1
 
-// 跳过登录 / 注册 / 短信 / token刷新 等认证路径，避免影响自己账号登录
-const SKIP_PATTERNS = [
-    /login/i, /logout/i, /register/i, /sms/i, /verif/i,
-    /captcha/i, /refresh.*token/i, /token.*refresh/i, /auth/i
-];
+let body = $response.body;
+let obj;
 
-const url = $request.url;
-if (SKIP_PATTERNS.some(p => p.test(url))) {
+try {
+    obj = JSON.parse(body);
+} catch (e) {
     $done({});
 }
 
-let headers = $request.headers;
-
-// 兼容大小写：token / Token / TOKEN
-const key = Object.keys(headers).find(k => k.toLowerCase() === "token");
-if (key) {
-    headers[key] = VIP_TOKEN;
-} else {
-    headers["token"] = VIP_TOKEN;
+function patchVip(o) {
+    if (!o || typeof o !== "object") return;
+    if ("vip"        in o) o.vip        = VIP_LEVEL;
+    if ("svip"       in o) o.svip       = VIP_LEVEL;
+    if ("vipEnd"     in o) o.vipEnd     = VIP_EXPIRE;
+    if ("svipEnd"    in o) o.svipEnd    = VIP_EXPIRE;
+    if ("vipEndTime" in o) o.vipEndTime = VIP_EXPIRE;
+    if ("isVip"      in o) o.isVip      = 1;
+    Object.keys(o).forEach(k => {
+        if (o[k] && typeof o[k] === "object") patchVip(o[k]);
+    });
 }
 
-$done({ headers });
+patchVip(obj);
+
+$done({ body: JSON.stringify(obj) });
