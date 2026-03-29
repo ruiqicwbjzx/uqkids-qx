@@ -2,8 +2,9 @@
 // 原理：保持自己的 token 不变，拦截服务器响应并将 vip 字段改为 SVIP
 // 不影响登录状态
 
-const VIP_EXPIRE = "2099-12-31 23:59:59";
-// isVip 逻辑: user.vip.intValue == 1 才返回 true，设 2 不生效
+// checkProductDate: 内部会拼接 " 23:59:59"，所以这里只填日期
+const VIP_EXPIRE = "2099-12-31";
+// isVip 逻辑: user.vip.intValue == 1 才返回 true
 const VIP_LEVEL  = 1;
 
 let body = $response.body;
